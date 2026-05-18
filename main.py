@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Request, Form, Depends, HTTPException
+from fastapi import FastAPI, Request, Form, Depends, HTTPException, Cookie
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
@@ -6,8 +6,30 @@ from sqlalchemy.orm import Session
 from datetime import date, datetime
 from typing import Optional
 import uvicorn
+import os
+from itsdangerous import URLSafeTimedSerializer, BadSignature
 
 from database import get_db, init_db, Vehiculo, Mantenimiento, TipoMantenimiento
+
+SECRET_KEY = os.environ.get("SECRET_KEY", "cambia-esta-clave-en-produccion")
+APP_USER = os.environ.get("APP_USER", "admin")
+APP_PASSWORD = os.environ.get("APP_PASSWORD", "admin")
+_signer = URLSafeTimedSerializer(SECRET_KEY)
+
+
+def get_session(session: Optional[str] = Cookie(default=None)):
+    if not session:
+        return None
+    try:
+        return _signer.loads(session, max_age=60 * 60 * 24 * 30)
+    except BadSignature:
+        return None
+
+
+def require_auth(session=Depends(get_session)):
+    if session is None:
+        raise HTTPException(status_code=307, headers={"Location": "/login"})
+    return session
 
 app = FastAPI(title="Control de Flota")
 app.mount("/static", StaticFiles(directory="static"), name="static")
@@ -62,8 +84,35 @@ def startup():
     init_db()
 
 
+@app.get("/login", response_class=HTMLResponse)
+def login_form(request: Request, session=Depends(get_session)):
+    if session:
+        return RedirectResponse(url="/", status_code=302)
+    return templates.TemplateResponse("login.html", {"request": request})
+
+
+@app.post("/login")
+def login(request: Request, username: str = Form(...), password: str = Form(...)):
+    if username == APP_USER and password == APP_PASSWORD:
+        token = _signer.dumps(username)
+        response = RedirectResponse(url="/", status_code=302)
+        response.set_cookie("session", token, httponly=True, max_age=60 * 60 * 24 * 30)
+        return response
+    return templates.TemplateResponse("login.html", {
+        "request": request,
+        "error": "Usuario o contraseña incorrectos",
+    })
+
+
+@app.get("/logout")
+def logout():
+    response = RedirectResponse(url="/login", status_code=302)
+    response.delete_cookie("session")
+    return response
+
+
 @app.get("/", response_class=HTMLResponse)
-def dashboard(request: Request, db: Session = Depends(get_db)):
+def dashboard(request: Request, db: Session = Depends(get_db), auth=Depends(require_auth)):
     vehiculos = db.query(Vehiculo).all()
     alertas = calcular_alertas(vehiculos, db)
     alertas_danger = [a for a in alertas if a["estado"] == "danger"]
@@ -80,7 +129,7 @@ def dashboard(request: Request, db: Session = Depends(get_db)):
 # ─── Vehículos ───────────────────────────────────────────────────────────────
 
 @app.get("/vehiculos", response_class=HTMLResponse)
-def listar_vehiculos(request: Request, db: Session = Depends(get_db)):
+def listar_vehiculos(request: Request, db: Session = Depends(get_db), auth=Depends(require_auth)):
     vehiculos = db.query(Vehiculo).all()
     return templates.TemplateResponse("vehiculos.html", {
         "request": request,
@@ -89,7 +138,7 @@ def listar_vehiculos(request: Request, db: Session = Depends(get_db)):
 
 
 @app.get("/vehiculos/nuevo", response_class=HTMLResponse)
-def nuevo_vehiculo_form(request: Request):
+def nuevo_vehiculo_form(request: Request, auth=Depends(require_auth)):
     return templates.TemplateResponse("form_vehiculo.html", {
         "request": request,
         "vehiculo": None,
@@ -107,6 +156,7 @@ def crear_vehiculo(
     km_actual: float = Form(...),
     notas: str = Form(""),
     db: Session = Depends(get_db),
+    auth=Depends(require_auth),
 ):
     existente = db.query(Vehiculo).filter(Vehiculo.patente == patente.upper()).first()
     if existente:
@@ -130,7 +180,7 @@ def crear_vehiculo(
 
 
 @app.get("/vehiculos/{vid}", response_class=HTMLResponse)
-def detalle_vehiculo(vid: int, request: Request, db: Session = Depends(get_db)):
+def detalle_vehiculo(vid: int, request: Request, db: Session = Depends(get_db), auth=Depends(require_auth)):
     v = db.query(Vehiculo).filter(Vehiculo.id == vid).first()
     if not v:
         raise HTTPException(status_code=404, detail="Vehículo no encontrado")
@@ -151,7 +201,7 @@ def detalle_vehiculo(vid: int, request: Request, db: Session = Depends(get_db)):
 
 
 @app.get("/vehiculos/{vid}/editar", response_class=HTMLResponse)
-def editar_vehiculo_form(vid: int, request: Request, db: Session = Depends(get_db)):
+def editar_vehiculo_form(vid: int, request: Request, db: Session = Depends(get_db), auth=Depends(require_auth)):
     v = db.query(Vehiculo).filter(Vehiculo.id == vid).first()
     if not v:
         raise HTTPException(status_code=404, detail="Vehículo no encontrado")
@@ -171,6 +221,7 @@ def editar_vehiculo(
     km_actual: float = Form(...),
     notas: str = Form(""),
     db: Session = Depends(get_db),
+    auth=Depends(require_auth),
 ):
     v = db.query(Vehiculo).filter(Vehiculo.id == vid).first()
     if not v:
@@ -185,7 +236,7 @@ def editar_vehiculo(
 
 
 @app.post("/vehiculos/{vid}/eliminar")
-def eliminar_vehiculo(vid: int, db: Session = Depends(get_db)):
+def eliminar_vehiculo(vid: int, db: Session = Depends(get_db), auth=Depends(require_auth)):
     v = db.query(Vehiculo).filter(Vehiculo.id == vid).first()
     if not v:
         raise HTTPException(status_code=404, detail="Vehículo no encontrado")
@@ -197,7 +248,7 @@ def eliminar_vehiculo(vid: int, db: Session = Depends(get_db)):
 # ─── Mantenimientos ──────────────────────────────────────────────────────────
 
 @app.get("/vehiculos/{vid}/mantenimiento/nuevo", response_class=HTMLResponse)
-def nuevo_mantenimiento_form(vid: int, request: Request, db: Session = Depends(get_db)):
+def nuevo_mantenimiento_form(vid: int, request: Request, db: Session = Depends(get_db), auth=Depends(require_auth)):
     v = db.query(Vehiculo).filter(Vehiculo.id == vid).first()
     if not v:
         raise HTTPException(status_code=404, detail="Vehículo no encontrado")
@@ -222,6 +273,7 @@ def crear_mantenimiento(
     costo: float = Form(0),
     notas: str = Form(""),
     db: Session = Depends(get_db),
+    auth=Depends(require_auth),
 ):
     v = db.query(Vehiculo).filter(Vehiculo.id == vid).first()
     if not v:
@@ -247,7 +299,7 @@ def crear_mantenimiento(
 
 
 @app.get("/vehiculos/{vid}/mantenimiento/{mid}/editar", response_class=HTMLResponse)
-def editar_mantenimiento_form(vid: int, mid: int, request: Request, db: Session = Depends(get_db)):
+def editar_mantenimiento_form(vid: int, mid: int, request: Request, db: Session = Depends(get_db), auth=Depends(require_auth)):
     v = db.query(Vehiculo).filter(Vehiculo.id == vid).first()
     m = db.query(Mantenimiento).filter(Mantenimiento.id == mid, Mantenimiento.vehiculo_id == vid).first()
     if not v or not m:
@@ -274,6 +326,7 @@ def editar_mantenimiento(
     costo: float = Form(0),
     notas: str = Form(""),
     db: Session = Depends(get_db),
+    auth=Depends(require_auth),
 ):
     m = db.query(Mantenimiento).filter(Mantenimiento.id == mid, Mantenimiento.vehiculo_id == vid).first()
     if not m:
@@ -291,7 +344,7 @@ def editar_mantenimiento(
 
 
 @app.post("/vehiculos/{vid}/mantenimiento/{mid}/eliminar")
-def eliminar_mantenimiento(vid: int, mid: int, db: Session = Depends(get_db)):
+def eliminar_mantenimiento(vid: int, mid: int, db: Session = Depends(get_db), auth=Depends(require_auth)):
     m = db.query(Mantenimiento).filter(Mantenimiento.id == mid, Mantenimiento.vehiculo_id == vid).first()
     if not m:
         raise HTTPException(status_code=404)
@@ -303,7 +356,7 @@ def eliminar_mantenimiento(vid: int, mid: int, db: Session = Depends(get_db)):
 # ─── Actualizar km ────────────────────────────────────────────────────────────
 
 @app.post("/vehiculos/{vid}/actualizar-km")
-def actualizar_km(vid: int, km_actual: float = Form(...), db: Session = Depends(get_db)):
+def actualizar_km(vid: int, km_actual: float = Form(...), db: Session = Depends(get_db), auth=Depends(require_auth)):
     v = db.query(Vehiculo).filter(Vehiculo.id == vid).first()
     if not v:
         raise HTTPException(status_code=404)
@@ -313,4 +366,5 @@ def actualizar_km(vid: int, km_actual: float = Form(...), db: Session = Depends(
 
 
 if __name__ == "__main__":
-    uvicorn.run("main:app", host="127.0.0.1", port=8000, reload=True)
+    port = int(os.environ.get("PORT", 8000))
+    uvicorn.run("main:app", host="0.0.0.0", port=port, reload=True)
