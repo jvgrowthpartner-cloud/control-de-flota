@@ -1,0 +1,89 @@
+:root {
+  --bs-body-bg: #f4f6f9;
+}
+
+body {
+  background-color: var(--bs-body-bg);
+}
+
+.navbar-brand {
+  font-size: 1.2rem;
+  letter-spacing: 0.3px;
+}
+
+/* Stat cards */
+.stat-icon {
+  width: 56px;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+/* Vehicle cards */
+.vehicle-card {
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.vehicle-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0,0,0,0.1) !important;
+}
+
+.vehicle-icon {
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+/* Badge tipos de mantenimiento */
+.tipo-badge {
+  font-size: 0.72rem;
+  font-weight: 500;
+  padding: 4px 8px;
+  border-radius: 6px;
+}
+
+.tipo-cambio-de-aceite       { background: #fff3cd; color: #856404; border: 1px solid #ffc10733; }
+.tipo-filtro-de-aceite       { background: #fde8d8; color: #7a3e00; border: 1px solid #fd7e1433; }
+.tipo-filtro-de-aire         { background: #d1ecf1; color: #0c5460; border: 1px solid #0dcaf033; }
+.tipo-filtro-de-combustible  { background: #d4edda; color: #155724; border: 1px solid #19875433; }
+.tipo-filtro-hidraulico      { background: #e2d9f3; color: #432874; border: 1px solid #6f42c133; }
+.tipo-cambio-de-pieza        { background: #f8d7da; color: #721c24; border: 1px solid #dc354533; }
+.tipo-revision-general       { background: #cfe2ff; color: #084298; border: 1px solid #0d6efd33; }
+.tipo-otro                   { background: #e2e3e5; color: #383d41; border: 1px solid #6c757d33; }
+
+/* Cards */
+.card {
+  border-radius: 12px;
+}
+
+.card-header {
+  border-radius: 12px 12px 0 0 !important;
+  padding: 0.85rem 1.25rem;
+}
+
+/* Alerts */
+.list-group-item-danger  { background-color: #fff5f5; border-left: 4px solid #dc3545; }
+.list-group-item-warning { background-color: #fffbf0; border-left: 4px solid #ffc107; }
+
+/* Table */
+.table th {
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #6c757d;
+}
+
+/* Footer */
+footer {
+  font-size: 0.8rem;
+}
+
+/* Forms */
+.form-label {
+  font-size: 0.9rem;
+}

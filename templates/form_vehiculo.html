@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+{% block title %}{{ accion }} Vehículo — Control de Flota{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-lg-6">
+    <nav aria-label="breadcrumb" class="mb-3">
+      <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="/vehiculos">Vehículos</a></li>
+        <li class="breadcrumb-item active">{{ accion }} Vehículo</li>
+      </ol>
+    </nav>
+
+    <div class="card border-0 shadow-sm">
+      <div class="card-header bg-white fw-semibold border-bottom">
+        <i class="bi bi-truck me-2 text-primary"></i>{{ accion }} Vehículo
+      </div>
+      <div class="card-body">
+        {% if error %}
+        <div class="alert alert-danger d-flex align-items-center gap-2">
+          <i class="bi bi-exclamation-circle-fill"></i>
+          {{ error }}
+        </div>
+        {% endif %}
+
+        <form method="post">
+          {% if not vehiculo %}
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Patente <span class="text-danger">*</span></label>
+            <input type="text" name="patente" class="form-control text-uppercase" placeholder="Ej: ABC123"
+                   required maxlength="20" />
+            <div class="form-text">Se guardará en mayúsculas automáticamente.</div>
+          </div>
+          {% endif %}
+
+          <div class="row g-3 mb-3">
+            <div class="col-sm-6">
+              <label class="form-label fw-semibold">Marca <span class="text-danger">*</span></label>
+              <input type="text" name="marca" class="form-control" placeholder="Ej: Mercedes-Benz"
+                     value="{{ vehiculo.marca if vehiculo else '' }}" required />
+            </div>
+            <div class="col-sm-6">
+              <label class="form-label fw-semibold">Modelo <span class="text-danger">*</span></label>
+              <input type="text" name="modelo" class="form-control" placeholder="Ej: Actros 2651"
+                     value="{{ vehiculo.modelo if vehiculo else '' }}" required />
+            </div>
+          </div>
+
+          <div class="row g-3 mb-3">
+            <div class="col-sm-6">
+              <label class="form-label fw-semibold">Año <span class="text-danger">*</span></label>
+              <input type="number" name="anio" class="form-control" placeholder="Ej: 2020"
+                     value="{{ vehiculo.anio if vehiculo else '' }}" min="1950" max="2030" required />
+            </div>
+            <div class="col-sm-6">
+              <label class="form-label fw-semibold">KM Actual <span class="text-danger">*</span></label>
+              <div class="input-group">
+                <input type="number" name="km_actual" class="form-control" placeholder="Ej: 125000"
+                       value="{{ vehiculo.km_actual | int if vehiculo else 0 }}" min="0" step="1" required />
+                <span class="input-group-text">km</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="mb-4">
+            <label class="form-label fw-semibold">Notas</label>
+            <textarea name="notas" class="form-control" rows="3"
+                      placeholder="Observaciones adicionales...">{{ vehiculo.notas if vehiculo else '' }}</textarea>
+          </div>
+
+          <div class="d-flex gap-2">
+            <button type="submit" class="btn btn-primary flex-grow-1">
+              <i class="bi bi-check-lg me-1"></i>{{ accion }} Vehículo
+            </button>
+            <a href="/vehiculos{% if vehiculo %}/{{ vehiculo.id }}{% endif %}" class="btn btn-outline-secondary">
+              Cancelar
+            </a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

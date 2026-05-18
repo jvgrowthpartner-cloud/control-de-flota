@@ -1,0 +1,145 @@
+{% extends "base.html" %}
+{% block title %}Registrar Mantenimiento — {{ vehiculo.patente }}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-lg-7">
+    <nav aria-label="breadcrumb" class="mb-3">
+      <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="/vehiculos">Vehículos</a></li>
+        <li class="breadcrumb-item"><a href="/vehiculos/{{ vehiculo.id }}">{{ vehiculo.patente }}</a></li>
+        <li class="breadcrumb-item active">
+          {% if mantenimiento %}Editar{% else %}Nuevo{% endif %} Mantenimiento
+        </li>
+      </ol>
+    </nav>
+
+    <div class="card border-0 shadow-sm">
+      <div class="card-header bg-white border-bottom">
+        <div class="fw-semibold">
+          <i class="bi bi-tools me-2 text-primary"></i>
+          {% if mantenimiento %}Editar{% else %}Registrar{% endif %} Mantenimiento
+        </div>
+        <div class="small text-muted">
+          {{ vehiculo.marca }} {{ vehiculo.modelo }} — KM actual: {{ "{:,.0f}".format(vehiculo.km_actual) }} km
+        </div>
+      </div>
+      <div class="card-body">
+        <form method="post">
+          <div class="row g-3 mb-3">
+            <div class="col-sm-6">
+              <label class="form-label fw-semibold">Tipo de Mantenimiento <span class="text-danger">*</span></label>
+              <select name="tipo" class="form-select" required id="tipoSelect">
+                <option value="">Seleccionar tipo...</option>
+                {% for t in tipos %}
+                <option value="{{ t }}"
+                  {% if mantenimiento and mantenimiento.tipo == t %}selected{% endif %}>
+                  {{ t }}
+                </option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-sm-6">
+              <label class="form-label fw-semibold">Fecha del Servicio <span class="text-danger">*</span></label>
+              <input type="date" name="fecha" class="form-control"
+                     value="{{ mantenimiento.fecha.isoformat() if mantenimiento else hoy }}"
+                     max="{{ hoy }}" required />
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Descripción <span class="text-danger">*</span></label>
+            <input type="text" name="descripcion" class="form-control"
+                   placeholder="Ej: Cambio de aceite 15W40 + filtro"
+                   value="{{ mantenimiento.descripcion if mantenimiento else '' }}" required />
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label fw-semibold">KM al momento del servicio <span class="text-danger">*</span></label>
+            <div class="input-group">
+              <input type="number" name="km_en_servicio" class="form-control"
+                     value="{{ mantenimiento.km_en_servicio | int if mantenimiento else vehiculo.km_actual | int }}"
+                     min="0" step="1" required />
+              <span class="input-group-text">km</span>
+            </div>
+            <div class="form-text">KM actual del vehículo: {{ "{:,.0f}".format(vehiculo.km_actual) }} km</div>
+          </div>
+
+          <hr class="my-3"/>
+          <p class="text-muted small fw-semibold mb-3">
+            <i class="bi bi-calendar-check me-1"></i>Configurar próximo mantenimiento (opcional)
+          </p>
+
+          <div class="row g-3 mb-3">
+            <div class="col-sm-6">
+              <label class="form-label fw-semibold">Intervalo en KM</label>
+              <div class="input-group">
+                <input type="number" name="proximo_km_intervalo" class="form-control" id="proximoKm"
+                       placeholder="Ej: 5000"
+                       value="{{ mantenimiento.proximo_km_intervalo | int if mantenimiento and mantenimiento.proximo_km_intervalo else '' }}"
+                       min="0" step="100" />
+                <span class="input-group-text">km</span>
+              </div>
+              <div class="form-text" id="proximoKmHint">Genera alerta cuando se acerque este umbral.</div>
+            </div>
+            <div class="col-sm-6">
+              <label class="form-label fw-semibold">Próxima Fecha</label>
+              <input type="date" name="proxima_fecha" class="form-control"
+                     value="{{ mantenimiento.proxima_fecha.isoformat() if mantenimiento and mantenimiento.proxima_fecha else '' }}" />
+              <div class="form-text">Genera alerta 15 días antes del vencimiento.</div>
+            </div>
+          </div>
+
+          <div class="row g-3 mb-4">
+            <div class="col-sm-6">
+              <label class="form-label fw-semibold">Costo ($)</label>
+              <div class="input-group">
+                <span class="input-group-text">$</span>
+                <input type="number" name="costo" class="form-control"
+                       value="{{ mantenimiento.costo | int if mantenimiento else 0 }}"
+                       min="0" step="1" />
+              </div>
+            </div>
+            <div class="col-sm-6">
+              <label class="form-label fw-semibold">Notas adicionales</label>
+              <textarea name="notas" class="form-control" rows="1"
+                        placeholder="Marca de aceite, nro de parte, taller...">{{ mantenimiento.notas if mantenimiento else '' }}</textarea>
+            </div>
+          </div>
+
+          <div class="d-flex gap-2">
+            <button type="submit" class="btn btn-primary flex-grow-1">
+              <i class="bi bi-check-lg me-1"></i>
+              {% if mantenimiento %}Guardar Cambios{% else %}Registrar Mantenimiento{% endif %}
+            </button>
+            <a href="/vehiculos/{{ vehiculo.id }}" class="btn btn-outline-secondary">Cancelar</a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  // Presets de intervalo por tipo de mantenimiento
+  const presets = {
+    "Cambio de Aceite": 5000,
+    "Filtro de Aceite": 5000,
+    "Filtro de Aire": 15000,
+    "Filtro de Combustible": 15000,
+    "Filtro Hidráulico": 20000,
+  };
+
+  document.getElementById('tipoSelect').addEventListener('change', function () {
+    const kmInput = document.getElementById('proximoKm');
+    const hint = document.getElementById('proximoKmHint');
+    const preset = presets[this.value];
+    if (preset && !kmInput.value) {
+      kmInput.value = preset;
+      hint.textContent = `Valor sugerido para ${this.value}: ${preset.toLocaleString()} km`;
+    }
+  });
+</script>
+{% endblock %}

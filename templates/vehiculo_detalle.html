@@ -1,0 +1,191 @@
+{% extends "base.html" %}
+{% block title %}{{ vehiculo.patente }} — Control de Flota{% endblock %}
+
+{% block content %}
+<!-- Cabecera -->
+<div class="row mb-4 align-items-center">
+  <div class="col">
+    <nav aria-label="breadcrumb">
+      <ol class="breadcrumb mb-1">
+        <li class="breadcrumb-item"><a href="/vehiculos">Vehículos</a></li>
+        <li class="breadcrumb-item active">{{ vehiculo.patente }}</li>
+      </ol>
+    </nav>
+    <h2 class="fw-bold mb-0">
+      <i class="bi bi-truck me-2 text-primary"></i>{{ vehiculo.patente }}
+    </h2>
+    <p class="text-muted mb-0">{{ vehiculo.marca }} {{ vehiculo.modelo }} · Año {{ vehiculo.anio }}</p>
+  </div>
+  <div class="col-auto d-flex gap-2">
+    <a href="/vehiculos/{{ vehiculo.id }}/mantenimiento/nuevo" class="btn btn-primary">
+      <i class="bi bi-tools me-1"></i>Registrar Mantenimiento
+    </a>
+    <a href="/vehiculos/{{ vehiculo.id }}/editar" class="btn btn-outline-secondary">
+      <i class="bi bi-pencil me-1"></i>Editar
+    </a>
+  </div>
+</div>
+
+<!-- Info + alertas -->
+<div class="row g-3 mb-4">
+  <!-- Datos del vehículo -->
+  <div class="col-lg-4">
+    <div class="card border-0 shadow-sm h-100">
+      <div class="card-header bg-white fw-semibold border-bottom">
+        <i class="bi bi-info-circle me-2 text-primary"></i>Datos del Vehículo
+      </div>
+      <div class="card-body">
+        <dl class="row mb-0 small">
+          <dt class="col-5 text-muted">Patente</dt>
+          <dd class="col-7 fw-semibold">{{ vehiculo.patente }}</dd>
+          <dt class="col-5 text-muted">Marca</dt>
+          <dd class="col-7">{{ vehiculo.marca }}</dd>
+          <dt class="col-5 text-muted">Modelo</dt>
+          <dd class="col-7">{{ vehiculo.modelo }}</dd>
+          <dt class="col-5 text-muted">Año</dt>
+          <dd class="col-7">{{ vehiculo.anio }}</dd>
+          <dt class="col-5 text-muted">KM Actual</dt>
+          <dd class="col-7 fw-bold text-primary">{{ "{:,.0f}".format(vehiculo.km_actual) }} km</dd>
+          {% if vehiculo.notas %}
+          <dt class="col-5 text-muted">Notas</dt>
+          <dd class="col-7">{{ vehiculo.notas }}</dd>
+          {% endif %}
+        </dl>
+
+        <!-- Actualizar km -->
+        <hr/>
+        <form method="post" action="/vehiculos/{{ vehiculo.id }}/actualizar-km" class="d-flex gap-2 align-items-end">
+          <div class="flex-grow-1">
+            <label class="form-label small text-muted mb-1">Actualizar Kilometraje</label>
+            <input type="number" name="km_actual" class="form-control form-control-sm"
+                   value="{{ vehiculo.km_actual | int }}" min="{{ vehiculo.km_actual | int }}" step="1"/>
+          </div>
+          <button type="submit" class="btn btn-outline-primary btn-sm">
+            <i class="bi bi-arrow-up-circle"></i>
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Alertas del vehículo -->
+  <div class="col-lg-8">
+    <div class="card border-0 shadow-sm h-100">
+      <div class="card-header bg-white fw-semibold border-bottom">
+        <i class="bi bi-bell me-2 text-warning"></i>Estado de Mantenimientos
+      </div>
+      <div class="card-body p-0">
+        {% if alertas %}
+        <div class="list-group list-group-flush">
+          {% for a in alertas %}
+          <div class="list-group-item list-group-item-{{ a.estado }}">
+            <div class="d-flex justify-content-between align-items-center">
+              <div>
+                <span class="fw-semibold">{{ a.tipo }}</span>
+                <span class="d-block small">{{ a.motivo }}</span>
+                <span class="d-block small text-muted">Último servicio: {{ a.ultimo_servicio }}</span>
+              </div>
+              {% if a.estado == 'danger' %}
+              <i class="bi bi-exclamation-triangle-fill text-danger fs-5"></i>
+              {% else %}
+              <i class="bi bi-clock-history text-warning fs-5"></i>
+              {% endif %}
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+        {% else %}
+        <div class="d-flex align-items-center gap-3 p-4">
+          <i class="bi bi-check-circle-fill text-success fs-3"></i>
+          <div>
+            <div class="fw-semibold text-success">Todo al día</div>
+            <div class="small text-muted">No hay mantenimientos vencidos ni próximos a vencer.</div>
+          </div>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Historial de mantenimientos -->
+<div class="card border-0 shadow-sm">
+  <div class="card-header bg-white fw-semibold border-bottom d-flex justify-content-between align-items-center">
+    <span><i class="bi bi-journal-text me-2 text-primary"></i>Historial de Mantenimientos</span>
+    <span class="badge bg-secondary">{{ mantenimientos | length }}</span>
+  </div>
+  <div class="card-body p-0">
+    {% if mantenimientos %}
+    <div class="table-responsive">
+      <table class="table table-hover mb-0 align-middle">
+        <thead class="table-light small">
+          <tr>
+            <th>Fecha</th>
+            <th>Tipo</th>
+            <th>Descripción</th>
+            <th>KM Servicio</th>
+            <th>Próximo KM</th>
+            <th>Próxima Fecha</th>
+            <th>Costo</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for m in mantenimientos %}
+          <tr>
+            <td class="text-nowrap small">{{ m.fecha }}</td>
+            <td>
+              <span class="badge tipo-badge tipo-{{ m.tipo | lower | replace(' ', '-') | replace('á','a') | replace('é','e') | replace('ó','o') }}">
+                {{ m.tipo }}
+              </span>
+            </td>
+            <td>
+              <span>{{ m.descripcion }}</span>
+              {% if m.notas %}
+              <span class="d-block text-muted small">{{ m.notas }}</span>
+              {% endif %}
+            </td>
+            <td class="text-nowrap small">{{ "{:,.0f}".format(m.km_en_servicio) }} km</td>
+            <td class="text-nowrap small">
+              {% if m.proximo_km_intervalo %}
+                {{ "{:,.0f}".format(m.km_en_servicio + m.proximo_km_intervalo) }} km
+              {% else %}<span class="text-muted">—</span>{% endif %}
+            </td>
+            <td class="text-nowrap small">
+              {% if m.proxima_fecha %}{{ m.proxima_fecha }}
+              {% else %}<span class="text-muted">—</span>{% endif %}
+            </td>
+            <td class="text-nowrap small">
+              {% if m.costo %}${{ "{:,.0f}".format(m.costo) }}{% else %}<span class="text-muted">—</span>{% endif %}
+            </td>
+            <td class="text-nowrap">
+              <a href="/vehiculos/{{ vehiculo.id }}/mantenimiento/{{ m.id }}/editar"
+                 class="btn btn-sm btn-outline-secondary" title="Editar">
+                <i class="bi bi-pencil"></i>
+              </a>
+              <form method="post"
+                    action="/vehiculos/{{ vehiculo.id }}/mantenimiento/{{ m.id }}/eliminar"
+                    class="d-inline"
+                    onsubmit="return confirm('¿Eliminar este registro de mantenimiento?')">
+                <button type="submit" class="btn btn-sm btn-outline-danger" title="Eliminar">
+                  <i class="bi bi-trash"></i>
+                </button>
+              </form>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="text-center py-5 text-muted">
+      <i class="bi bi-journal-x display-4 d-block mb-3 opacity-25"></i>
+      <p>No hay mantenimientos registrados para este vehículo.</p>
+      <a href="/vehiculos/{{ vehiculo.id }}/mantenimiento/nuevo" class="btn btn-primary">
+        <i class="bi bi-plus-lg me-1"></i>Registrar Mantenimiento
+      </a>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
