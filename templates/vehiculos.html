@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Vehículos — Control de Flota{% endblock %}
+{% block title %}Vehículos – Control de Flota{% endblock %}
 
 {% block content %}
 <div class="row mb-4 align-items-center">
@@ -17,6 +17,8 @@
 {% if vehiculos %}
 <div class="row g-3">
   {% for v in vehiculos %}
+  {% set itv = estado_doc(v.itv_vencimiento) %}
+  {% set taco = estado_doc(v.tacografo_vencimiento) %}
   <div class="col-sm-6 col-xl-4">
     <div class="card border-0 shadow-sm h-100 vehicle-card">
       <div class="card-body">
@@ -39,6 +41,32 @@
             <div class="small text-muted">Mantenimientos</div>
             <div class="fw-semibold">{{ v.mantenimientos | length }}</div>
           </div>
+        </div>
+
+        <div class="d-flex gap-2 mb-3 flex-wrap">
+          {% if v.itv_vencimiento %}
+            {% if itv[0] == 'danger' %}
+              <span class="badge bg-danger">ITV: Vencida ({{ itv[1] | abs }} días)</span>
+            {% elif itv[0] == 'warning' %}
+              <span class="badge bg-warning text-dark">ITV: {{ itv[1] }} días</span>
+            {% else %}
+              <span class="badge bg-success">ITV: {{ itv[1] }} días</span>
+            {% endif %}
+          {% else %}
+            <span class="badge bg-secondary">ITV: Sin fecha</span>
+          {% endif %}
+
+          {% if v.tacografo_vencimiento %}
+            {% if taco[0] == 'danger' %}
+              <span class="badge bg-danger">Tacógrafo: Vencido ({{ taco[1] | abs }} días)</span>
+            {% elif taco[0] == 'warning' %}
+              <span class="badge bg-warning text-dark">Tacógrafo: {{ taco[1] }} días</span>
+            {% else %}
+              <span class="badge bg-success">Tacógrafo: {{ taco[1] }} días</span>
+            {% endif %}
+          {% else %}
+            <span class="badge bg-secondary">Tacógrafo: Sin fecha</span>
+          {% endif %}
         </div>
 
         {% if v.notas %}

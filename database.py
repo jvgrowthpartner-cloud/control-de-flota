@@ -33,6 +33,8 @@ class Vehiculo(Base):
     anio = Column(Integer, nullable=False)
     km_actual = Column(Float, default=0)
     notas = Column(Text, default="")
+    itv_vencimiento = Column(Date, nullable=True)
+    tacografo_vencimiento = Column(Date, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
 
     mantenimientos = relationship("Mantenimiento", back_populates="vehiculo", cascade="all, delete-orphan")
@@ -66,3 +68,11 @@ def get_db():
 
 def init_db():
     Base.metadata.create_all(bind=engine)
+    from sqlalchemy import text
+    with engine.connect() as conn:
+        for col_def in ["itv_vencimiento DATE", "tacografo_vencimiento DATE"]:
+            try:
+                conn.execute(text(f"ALTER TABLE vehiculos ADD COLUMN {col_def}"))
+                conn.commit()
+            except Exception:
+                pass

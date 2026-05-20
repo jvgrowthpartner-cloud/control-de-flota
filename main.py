@@ -31,9 +31,23 @@ def require_auth(session=Depends(get_session)):
         raise HTTPException(status_code=307, headers={"Location": "/login"})
     return session
 
+
+def estado_doc(fecha):
+    if not fecha:
+        return (None, None)
+    dias = (fecha - date.today()).days
+    if dias < 0:
+        return ("danger", dias)
+    elif dias <= 30:
+        return ("warning", dias)
+    else:
+        return ("success", dias)
+
+
 app = FastAPI(title="Control de Flota")
 app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
+templates.env.globals["estado_doc"] = estado_doc
 
 
 def calcular_alertas(vehiculos: list, db: Session):
@@ -126,8 +140,6 @@ def dashboard(request: Request, db: Session = Depends(get_db), auth=Depends(requ
     })
 
 
-# ─── Vehículos ───────────────────────────────────────────────────────────────
-
 @app.get("/vehiculos", response_class=HTMLResponse)
 def listar_vehiculos(request: Request, db: Session = Depends(get_db), auth=Depends(require_auth)):
     vehiculos = db.query(Vehiculo).all()
@@ -155,6 +167,8 @@ def crear_vehiculo(
     anio: int = Form(...),
     km_actual: float = Form(...),
     notas: str = Form(""),
+    itv_vencimiento: Optional[date] = Form(None),
+    tacografo_vencimiento: Optional[date] = Form(None),
     db: Session = Depends(get_db),
     auth=Depends(require_auth),
 ):
@@ -173,6 +187,8 @@ def crear_vehiculo(
         anio=anio,
         km_actual=km_actual,
         notas=notas,
+        itv_vencimiento=itv_vencimiento,
+        tacografo_vencimiento=tacografo_vencimiento,
     )
     db.add(v)
     db.commit()
@@ -185,12 +201,7 @@ def detalle_vehiculo(vid: int, request: Request, db: Session = Depends(get_db), 
     if not v:
         raise HTTPException(status_code=404, detail="Vehículo no encontrado")
     mantenimientos = sorted(v.mantenimientos, key=lambda x: x.fecha, reverse=True)
-
-    ultimos = {}
-    for m in sorted(v.mantenimientos, key=lambda x: x.fecha):
-        ultimos[m.tipo] = m
     alertas = calcular_alertas([v], db)
-
     return templates.TemplateResponse("vehiculo_detalle.html", {
         "request": request,
         "vehiculo": v,
@@ -220,6 +231,8 @@ def editar_vehiculo(
     anio: int = Form(...),
     km_actual: float = Form(...),
     notas: str = Form(""),
+    itv_vencimiento: Optional[date] = Form(None),
+    tacografo_vencimiento: Optional[date] = Form(None),
     db: Session = Depends(get_db),
     auth=Depends(require_auth),
 ):
@@ -231,6 +244,8 @@ def editar_vehiculo(
     v.anio = anio
     v.km_actual = km_actual
     v.notas = notas
+    v.itv_vencimiento = itv_vencimiento
+    v.tacografo_vencimiento = tacografo_vencimiento
     db.commit()
     return RedirectResponse(url=f"/vehiculos/{vid}", status_code=303)
 
@@ -244,8 +259,6 @@ def eliminar_vehiculo(vid: int, db: Session = Depends(get_db), auth=Depends(requ
     db.commit()
     return RedirectResponse(url="/vehiculos", status_code=303)
 
-
-# ─── Mantenimientos ──────────────────────────────────────────────────────────
 
 @app.get("/vehiculos/{vid}/mantenimiento/nuevo", response_class=HTMLResponse)
 def nuevo_mantenimiento_form(vid: int, request: Request, db: Session = Depends(get_db), auth=Depends(require_auth)):
@@ -352,8 +365,6 @@ def eliminar_mantenimiento(vid: int, mid: int, db: Session = Depends(get_db), au
     db.commit()
     return RedirectResponse(url=f"/vehiculos/{vid}", status_code=303)
 
-
-# ─── Actualizar km ────────────────────────────────────────────────────────────
 
 @app.post("/vehiculos/{vid}/actualizar-km")
 def actualizar_km(vid: int, km_actual: float = Form(...), db: Session = Depends(get_db), auth=Depends(require_auth)):

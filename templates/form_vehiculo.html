@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}{{ accion }} Vehículo — Control de Flota{% endblock %}
+{% block title %}{{ accion }} Vehículo – Control de Flota{% endblock %}
 
 {% block content %}
 <div class="row justify-content-center">
@@ -59,6 +59,19 @@
                        value="{{ vehiculo.km_actual | int if vehiculo else 0 }}" min="0" step="1" required />
                 <span class="input-group-text">km</span>
               </div>
+            </div>
+          </div>
+
+          <div class="row g-3 mb-3">
+            <div class="col-sm-6">
+              <label class="form-label fw-semibold">Vencimiento ITV</label>
+              <input type="date" name="itv_vencimiento" class="form-control"
+                     value="{{ vehiculo.itv_vencimiento if vehiculo and vehiculo.itv_vencimiento else '' }}" />
+            </div>
+            <div class="col-sm-6">
+              <label class="form-label fw-semibold">Vencimiento Tacógrafo</label>
+              <input type="date" name="tacografo_vencimiento" class="form-control"
+                     value="{{ vehiculo.tacografo_vencimiento if vehiculo and vehiculo.tacografo_vencimiento else '' }}" />
             </div>
           </div>
 
