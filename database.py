@@ -5,9 +5,14 @@ from datetime import datetime
 import enum
 import os
 
-_db_path = os.environ.get("DATA_DIR", ".") + "/flota.db"
-DATABASE_URL = f"sqlite:///{_db_path}"
-engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
+DATABASE_URL = os.environ.get("DATABASE_URL")
+if DATABASE_URL and DATABASE_URL.startswith("postgres://"):
+    DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
+if not DATABASE_URL:
+    DATABASE_URL = "sqlite:///./flota.db"
+
+connect_args = {"check_same_thread": False} if DATABASE_URL.startswith("sqlite") else {}
+engine = create_engine(DATABASE_URL, connect_args=connect_args)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
 
@@ -68,11 +73,3 @@ def get_db():
 
 def init_db():
     Base.metadata.create_all(bind=engine)
-    from sqlalchemy import text
-    with engine.connect() as conn:
-        for col_def in ["itv_vencimiento DATE", "tacografo_vencimiento DATE"]:
-            try:
-                conn.execute(text(f"ALTER TABLE vehiculos ADD COLUMN {col_def}"))
-                conn.commit()
-            except Exception:
-                pass
