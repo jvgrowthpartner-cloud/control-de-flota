@@ -167,6 +167,7 @@ def crear_vehiculo(
     anio: int = Form(...),
     km_actual: float = Form(...),
     notas: str = Form(""),
+    tipo_vehiculo: str = Form(""),
     itv_vencimiento: Optional[str] = Form(None),
     tacografo_vencimiento: Optional[str] = Form(None),
     db: Session = Depends(get_db),
@@ -187,6 +188,7 @@ def crear_vehiculo(
         anio=anio,
         km_actual=km_actual,
         notas=notas,
+        tipo_vehiculo=tipo_vehiculo,
         itv_vencimiento=date.fromisoformat(itv_vencimiento) if itv_vencimiento else None,
         tacografo_vencimiento=date.fromisoformat(tacografo_vencimiento) if tacografo_vencimiento else None,
     )
@@ -231,6 +233,7 @@ def editar_vehiculo(
     anio: int = Form(...),
     km_actual: float = Form(...),
     notas: str = Form(""),
+    tipo_vehiculo: str = Form(""),
     itv_vencimiento: Optional[str] = Form(None),
     tacografo_vencimiento: Optional[str] = Form(None),
     db: Session = Depends(get_db),
@@ -244,6 +247,7 @@ def editar_vehiculo(
     v.anio = anio
     v.km_actual = km_actual
     v.notas = notas
+    v.tipo_vehiculo = tipo_vehiculo
     v.itv_vencimiento = date.fromisoformat(itv_vencimiento) if itv_vencimiento else None
     v.tacografo_vencimiento = date.fromisoformat(tacografo_vencimiento) if tacografo_vencimiento else None
     db.commit()
