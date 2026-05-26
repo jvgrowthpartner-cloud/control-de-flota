@@ -167,8 +167,8 @@ def crear_vehiculo(
     anio: int = Form(...),
     km_actual: float = Form(...),
     notas: str = Form(""),
-    itv_vencimiento: Optional[date] = Form(None),
-    tacografo_vencimiento: Optional[date] = Form(None),
+    itv_vencimiento: Optional[str] = Form(None),
+    tacografo_vencimiento: Optional[str] = Form(None),
     db: Session = Depends(get_db),
     auth=Depends(require_auth),
 ):
@@ -187,8 +187,8 @@ def crear_vehiculo(
         anio=anio,
         km_actual=km_actual,
         notas=notas,
-        itv_vencimiento=itv_vencimiento,
-        tacografo_vencimiento=tacografo_vencimiento,
+        itv_vencimiento=date.fromisoformat(itv_vencimiento) if itv_vencimiento else None,
+        tacografo_vencimiento=date.fromisoformat(tacografo_vencimiento) if tacografo_vencimiento else None,
     )
     db.add(v)
     db.commit()
@@ -231,8 +231,8 @@ def editar_vehiculo(
     anio: int = Form(...),
     km_actual: float = Form(...),
     notas: str = Form(""),
-    itv_vencimiento: Optional[date] = Form(None),
-    tacografo_vencimiento: Optional[date] = Form(None),
+    itv_vencimiento: Optional[str] = Form(None),
+    tacografo_vencimiento: Optional[str] = Form(None),
     db: Session = Depends(get_db),
     auth=Depends(require_auth),
 ):
@@ -244,8 +244,8 @@ def editar_vehiculo(
     v.anio = anio
     v.km_actual = km_actual
     v.notas = notas
-    v.itv_vencimiento = itv_vencimiento
-    v.tacografo_vencimiento = tacografo_vencimiento
+    v.itv_vencimiento = date.fromisoformat(itv_vencimiento) if itv_vencimiento else None
+    v.tacografo_vencimiento = date.fromisoformat(tacografo_vencimiento) if tacografo_vencimiento else None
     db.commit()
     return RedirectResponse(url=f"/vehiculos/{vid}", status_code=303)
 
