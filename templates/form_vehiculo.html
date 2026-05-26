@@ -46,6 +46,15 @@
             </div>
           </div>
 
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Tipo de Vehículo</label>
+            <select name="tipo_vehiculo" class="form-select">
+              <option value="" {% if not vehiculo or not vehiculo.tipo_vehiculo %}selected{% endif %}>-- Sin especificar --</option>
+              <option value="Tractora" {% if vehiculo and vehiculo.tipo_vehiculo == 'Tractora' %}selected{% endif %}>Tractora</option>
+              <option value="Semirremolque" {% if vehiculo and vehiculo.tipo_vehiculo == 'Semirremolque' %}selected{% endif %}>Semirremolque</option>
+            </select>
+          </div>
+
           <div class="row g-3 mb-3">
             <div class="col-sm-6">
               <label class="form-label fw-semibold">Año <span class="text-danger">*</span></label>

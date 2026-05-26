@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell(ls \"C:\\\\Users\\\\Josev\\\\OneDrive\\\\Escritorio\\\\web la estamperia\\\\\")",
+      "WebFetch(domain:www.instagram.com)"
+    ]
+  }
+}

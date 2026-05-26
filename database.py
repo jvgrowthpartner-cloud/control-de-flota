@@ -1,15 +1,13 @@
-from sqlalchemy import create_engine, Column, Integer, String, Float, Date, Text, DateTime, ForeignKey, Enum
+from sqlalchemy import create_engine, Column, Integer, String, Float, Date, Text, DateTime, ForeignKey
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, relationship
 from datetime import datetime
 import enum
 import os
 
-DATABASE_URL = os.environ.get("DATABASE_URL")
-if DATABASE_URL and DATABASE_URL.startswith("postgres://"):
+DATABASE_URL = os.environ.get("DATABASE_URL", "sqlite:///./flota.db")
+if DATABASE_URL.startswith("postgres://"):
     DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
-if not DATABASE_URL:
-    DATABASE_URL = "sqlite:///./flota.db"
 
 connect_args = {"check_same_thread": False} if DATABASE_URL.startswith("sqlite") else {}
 engine = create_engine(DATABASE_URL, connect_args=connect_args)
@@ -38,6 +36,7 @@ class Vehiculo(Base):
     anio = Column(Integer, nullable=False)
     km_actual = Column(Float, default=0)
     notas = Column(Text, default="")
+    tipo_vehiculo = Column(String(20), default="")
     itv_vencimiento = Column(Date, nullable=True)
     tacografo_vencimiento = Column(Date, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
@@ -73,3 +72,10 @@ def get_db():
 
 def init_db():
     Base.metadata.create_all(bind=engine)
+    from sqlalchemy import text
+    with engine.connect() as conn:
+        try:
+            conn.execute(text("ALTER TABLE vehiculos ADD COLUMN tipo_vehiculo VARCHAR(20) DEFAULT ''"))
+            conn.commit()
+        except Exception:
+            pass
