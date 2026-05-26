@@ -64,14 +64,14 @@
 
           <div class="row g-3 mb-3">
             <div class="col-sm-6">
-              <label class="form-label fw-semibold">Vencimiento ITV</label>
+              <label class="form-label fw-semibold">Vencimiento ITV <span class="text-muted fw-normal small">(opcional)</span></label>
               <input type="date" name="itv_vencimiento" class="form-control"
-                     value="{{ vehiculo.itv_vencimiento if vehiculo and vehiculo.itv_vencimiento else '' }}" />
+                     {% if vehiculo and vehiculo.itv_vencimiento %}value="{{ vehiculo.itv_vencimiento }}"{% endif %} />
             </div>
             <div class="col-sm-6">
-              <label class="form-label fw-semibold">Vencimiento Tacógrafo</label>
+              <label class="form-label fw-semibold">Vencimiento Tacógrafo <span class="text-muted fw-normal small">(opcional)</span></label>
               <input type="date" name="tacografo_vencimiento" class="form-control"
-                     value="{{ vehiculo.tacografo_vencimiento if vehiculo and vehiculo.tacografo_vencimiento else '' }}" />
+                     {% if vehiculo and vehiculo.tacografo_vencimiento %}value="{{ vehiculo.tacografo_vencimiento }}"{% endif %} />
             </div>
           </div>
 
