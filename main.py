@@ -185,10 +185,6 @@ def detalle_vehiculo(vid: int, request: Request, db: Session = Depends(get_db), 
     if not v:
         raise HTTPException(status_code=404, detail="Vehículo no encontrado")
     mantenimientos = sorted(v.mantenimientos, key=lambda x: x.fecha, reverse=True)
-
-    ultimos = {}
-    for m in sorted(v.mantenimientos, key=lambda x: x.fecha):
-        ultimos[m.tipo] = m
     alertas = calcular_alertas([v], db)
 
     return templates.TemplateResponse("vehiculo_detalle.html", {
